@@ -1,0 +1,10 @@
+{
+  "appId": "com.wdwright.app",
+  "appName": "WD Wright",
+  "webDir": "out",
+  "backgroundColor": "#112628",
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": false
+  }
+}

@@ -1,68 +1,24 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# WD Wright Firebase App
 
-## Available Scripts
+This directory contains the Next.js and Firebase source for the current WD Wright web app. React is the UI library; Next.js provides the application framework and static export.
 
-In the project directory, you can run:
+## Local development
 
-### `npm start`
+1. Install a current Node.js release and run `npm ci` in this directory.
+2. Copy `.env.example` to `.env.local` and fill in the Firebase web app values for a project you control.
+3. Configure Authentication and the required Firebase services in that project.
+4. Run `npm run dev` to start the local app.
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Firebase client configuration is in `src/firebase.js`. Firebase client API keys identify a Firebase app; protect data with Authentication and Security Rules, and keep server credentials in Firebase Secret Manager. Do not commit `.env.local` or service-account keys.
 
-The page will reload if you make edits.<br>
-You will also see any lint errors in the console.
+## Backend status
 
-### `npm test`
+The repository includes Cloud Functions, Firestore rules, and Storage rules. Cloud Functions are intentionally left off while Blaze is deferred. The latest Firestore API check returned 403, default database creation in `nam5` did not complete, and Firebase Authentication setup reported `CONFIGURATION_NOT_FOUND`. A code push does not activate these services. See the backend activation checklist before enabling live account, dispatch, file, recruiting, or billing workflows.
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Documentation
 
-### `npm run build`
-
-Builds the app for production to the `build` folder.<br>
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `npm run build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+- [Firebase backend hardening](docs/WDWRIGHT_BACKEND_HARDENING_2026-11-02.md)
+- [Installed UX features and integration limits](docs/WDWRIGHT_UX_FEATURES_2026-11-02.md)
+- [40-feature installation and activation limits](docs/WDWRIGHT_FORTY_FEATURES_INSTALL_2026-11-02.md)
+- [Hosting-only deployment history and backend prerequisites](docs/WDWRIGHT_HOSTING_ONLY_DEPLOY_2026-05-06.md)
+- [Documentation index](docs/README.md)

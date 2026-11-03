@@ -1,36 +1,69 @@
 {
   "name": "wd-wright",
-  "version": "0.1.0",
-  "private": true,
-  "dependencies": {
-    "babel-polyfill": "^6.26.0",
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6",
-    "react-scripts": "^3.3.1",
-    "scroll-behavior-polyfill": "^2.0.7"
-  },
+  "version": "1.0.0",
+  "description": "Wright Traffic Control web, desktop, and mobile platform scaffold",
+  "main": "electron/main.cjs",
+  "type": "module",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test:backend:smoke": "node scripts/backend-smoke.mjs && node --check functions/backend-core.js && node --check functions/operations-services.js && node --check functions/data-document-services.js && node --check functions/index.js",
+    "test:compliance": "node --test tests/compliance-mechanics.test.mjs",
+    "test": "npm run test:compliance",
+    "build:hosting": "next build",
+    "deploy:functions": "echo \"Firebase Functions are disabled until wd-wright-traffic is upgraded to Blaze.\"",
+    "deploy:backend": "npm run deploy:hosting",
+    "build:android": "next build",
+    "sync:android": "npm run build:android && npx cap sync android",
+    "deploy:hosting": "node scripts/guard-deploy.mjs && npm run build:hosting && npx firebase-tools deploy --only hosting --project wd-wright-traffic",
+    "build:ios": "next build",
+    "sync:ios": "npm run build:ios && npx cap sync ios",
+    "open:ios": "npx cap open ios",
+    "dev:desktop": "concurrently -k \"next dev\" \"wait-on http://127.0.0.1:3000 && electron .\"",
+    "build:desktop": "next build",
+    "build:windows": "npm run build:desktop",
+    "prepare:windows-stage": "node scripts/stage-desktop-build.mjs",
+    "dist:win": "npm run build:desktop && npm run prepare:windows-stage && electron-builder --projectDir .desktop-build --win nsis",
+    "pack:win": "npm run build:desktop && npm run prepare:windows-stage && electron-builder --projectDir .desktop-build --dir --win"
   },
-  "eslintConfig": {
-    "extends": "react-app"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/ios": "^8.3.0",
+    "firebase": "^12.11.0",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "node-sass": "^4.14.1"
+    "@capacitor/cli": "^8.3.0",
+    "concurrently": "^9.2.1",
+    "electron": "^41.1.0",
+    "electron-builder": "^26.8.1",
+    "puppeteer-core": "^24.42.0",
+    "wait-on": "^9.0.4"
+  },
+  "build": {
+    "appId": "com.wdwright.platform",
+    "productName": "WD Wright",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "WD-Wright-Setup-${version}.${ext}"
+    }
   }
 }
