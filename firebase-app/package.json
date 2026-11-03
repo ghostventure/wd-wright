@@ -1,0 +1,69 @@
+{
+  "name": "wd-wright",
+  "version": "1.0.0",
+  "description": "Wright Traffic Control web, desktop, and mobile platform scaffold",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test:backend:smoke": "node scripts/backend-smoke.mjs && node --check functions/backend-core.js && node --check functions/operations-services.js && node --check functions/data-document-services.js && node --check functions/index.js",
+    "test:compliance": "node --test tests/compliance-mechanics.test.mjs",
+    "test": "npm run test:compliance",
+    "build:hosting": "next build",
+    "deploy:functions": "echo \"Functions deployment is disabled until Firebase billing, APIs, and secrets are configured.\"",
+    "deploy:backend": "echo \"Backend deployment is disabled until Firebase prerequisites are configured.\"",
+    "build:android": "next build",
+    "sync:android": "npm run build:android && npx cap sync android",
+    "deploy:hosting": "echo \"Hosting deployment is disabled in this public source copy; configure and review your Firebase project first.\"",
+    "build:ios": "next build",
+    "sync:ios": "npm run build:ios && npx cap sync ios",
+    "open:ios": "npx cap open ios",
+    "dev:desktop": "concurrently -k \"next dev\" \"wait-on http://127.0.0.1:3000 && electron .\"",
+    "build:desktop": "next build",
+    "build:windows": "npm run build:desktop",
+    "prepare:windows-stage": "node scripts/stage-desktop-build.mjs",
+    "dist:win": "npm run build:desktop && npm run prepare:windows-stage && electron-builder --projectDir .desktop-build --win nsis",
+    "pack:win": "npm run build:desktop && npm run prepare:windows-stage && electron-builder --projectDir .desktop-build --dir --win"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/ios": "^8.3.0",
+    "firebase": "^12.11.0",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.3.0",
+    "concurrently": "^9.2.1",
+    "electron": "^41.1.0",
+    "electron-builder": "^26.8.1",
+    "puppeteer-core": "^24.42.0",
+    "wait-on": "^9.0.4"
+  },
+  "build": {
+    "appId": "com.wdwright.platform",
+    "productName": "WD Wright",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "WD-Wright-Setup-${version}.${ext}"
+    }
+  }
+}
