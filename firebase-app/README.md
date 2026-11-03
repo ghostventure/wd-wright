@@ -18,5 +18,6 @@ The repository includes Cloud Functions, Firestore rules, and Storage rules. The
 ## Documentation
 
 - [Firebase backend hardening](docs/WDWRIGHT_BACKEND_HARDENING_2026-11-02.md)
+- [Installed UX features and integration limits](docs/WDWRIGHT_UX_FEATURES_2026-11-02.md)
 - [Hosting-only deployment history and backend prerequisites](docs/WDWRIGHT_HOSTING_ONLY_DEPLOY_2026-05-06.md)
 - [Documentation index](docs/README.md)

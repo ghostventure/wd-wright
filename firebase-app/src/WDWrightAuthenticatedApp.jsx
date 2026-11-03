@@ -12,8 +12,18 @@ import {
 import WDWrightBrandLockup from "./WDWrightBrandLockup.jsx";
 import { AmbientSection, BreadcrumbTrail, EmptyPanel, FilePreviewModal, HelpDrawer, QuickActionRail, ResponsiveDataList, SegmentedThemeToggle, StatusPill } from "./WDWrightUiKit.jsx";
 import WDWrightWorkspace from "./WDWrightWorkspace.jsx";
+import {
+  AccountSetupPanel,
+  CustomerRequestPanel,
+  DocumentReadinessPanel,
+  FieldJobBriefPanel,
+  FieldReadinessPanel,
+  NotificationPreferencesPanel,
+  ProjectContactsPanel,
+  SafetyResourcesPanel,
+  SavedLocationsPanel,
+} from "./WDWrightAccountExperience.jsx";
 import { getOneWrightId, isPrivilegedWrightUser } from "./wd-wright-backend.js";
-import { buildCrewAvailability, buildJobSchedule, buildShiftStatusFeed, buildTimelineState, createDispatchRequest, forecastCapacity } from "./wd-wright-operations.js";
 import { useWrightThemeMode, WRIGHT_THEME_OPTIONS } from "./wd-wright-theme-sync.js";
 import { WDWRIGHT_THEME } from "./wd-wright-theme.js";
 
@@ -212,6 +222,10 @@ function WrightOverviewView({ user, palette, onNavigate, onOpenPublicPage, onLog
         </>,
         palette
       )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 14 }}>
+        <CustomerRequestPanel palette={palette} onOpenQuote={() => onOpenPublicPage("/quote")} />
+        <AccountSetupPanel user={user} palette={palette} onOpenProfile={() => onNavigate("profile")} />
+      </div>
       {surface(
         <>
           <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: palette.strong, marginBottom: 12 }}>
@@ -299,21 +313,9 @@ function WrightOverviewView({ user, palette, onNavigate, onOpenPublicPage, onLog
 }
 
 function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
-  const [deskMarket, setDeskMarket] = useState(user?.userDatabase?.targetMarket || "North Carolina");
+  const [deskMarket, setDeskMarket] = useState(user?.userDatabase?.targetMarket || "");
   const oneId = getOneWrightId(user) || "Pending";
   const managerAccessSource = getManagerAccessSource(user);
-  const officeHint = deskMarket || user?.userDatabase?.targetMarket || "North Carolina";
-  const dispatchProfile = createDispatchRequest("account-home", {
-    location: officeHint,
-    service: user?.userDatabase?.transactionIntent || "service",
-    timeline: user?.userDatabase?.timelineBand || "undisclosed",
-    details: user?.userDatabase?.notes || "Manager desk operational review",
-  });
-  const timeline = buildTimelineState("account-home", dispatchProfile);
-  const crew = buildCrewAvailability(dispatchProfile);
-  const schedule = buildJobSchedule("account-home", dispatchProfile);
-  const capacity = forecastCapacity(dispatchProfile);
-  const shiftFeed = buildShiftStatusFeed(dispatchProfile);
   const managerProfileRows = [
     { id: "mgr-1", field: "Desk owner", value: user?.name || user?.email || "Manager", note: "Current signed-in manager account" },
     { id: "mgr-2", field: "Signed-in email", value: user?.email || "Pending", note: "This email anchors manager access and sign-in recovery" },
@@ -321,58 +323,23 @@ function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
     { id: "mgr-4", field: "WD Wright OneID", value: oneId, note: "Shared identity across protected WD Wright pages" },
     { id: "mgr-5", field: "Sign-in scope", value: "OneID, all of WD Wright", note: "Sign-in and sign-out propagate across the protected shell" },
     { id: "mgr-6", field: "Department", value: user?.employeeProfile?.department || "Operations", note: "Structured company profile field" },
-    { id: "mgr-7", field: "Office", value: user?.employeeProfile?.office || dispatchProfile.route?.officeHint || "national-desk", note: "Structured office assignment for the manager account" },
+    { id: "mgr-7", field: "Office", value: user?.employeeProfile?.office || "Not set", note: "Structured office assignment for the manager account" },
     { id: "mgr-8", field: "Title", value: user?.employeeProfile?.title || "Manager", note: "Current company title on the account" },
     { id: "mgr-9", field: "Manager level", value: user?.employeeProfile?.managerLevel || "none", note: "Company hierarchy level for this profile" },
-    { id: "mgr-10", field: "Market", value: dispatchProfile.route?.market || "General Coverage", note: "Coverage focus for this desk" },
+    { id: "mgr-10", field: "Market", value: user?.userDatabase?.targetMarket || "Not set", note: "Market saved in this account profile" },
     { id: "mgr-11", field: "Support tier", value: user?.userDatabase?.supportTier || "standard", note: "Account servicing posture" },
     { id: "mgr-12", field: "Stage owner", value: user?.userDatabase?.stageOwner || "Not assigned", note: "Current desk owner label" },
   ];
-  const dispatchRows = [
-    { id: "desk-queue", queue: dispatchProfile.route?.queue || "general-intake", priority: dispatchProfile.route?.priority || "standard", office: dispatchProfile.route?.officeHint || "national-desk", score: String(dispatchProfile.route?.priorityScore || 42) },
-    { id: "desk-window", queue: dispatchProfile.escalationLevel || "office-coordinator", priority: dispatchProfile.dispatchWindow || "standard-hours", office: dispatchProfile.coverage?.region || "general", score: schedule.targetResponseHours ? `${schedule.targetResponseHours}h target` : "n/a" },
-  ];
-  const timelineRows = (timeline || []).map((item, index) => ({
-    id: `timeline-${item.key || index}`,
-    stage: item.label || item.key || `Stage ${index + 1}`,
-    status: item.status || "pending",
-    owner: item.owner || "Desk review",
-  }));
-  const feedRows = (shiftFeed || []).map((item, index) => ({
-    id: `feed-${index}`,
-    type: item.type || "status",
-    office: item.office || item.queue || dispatchProfile.route?.officeHint || "national-desk",
-    detail: item.label || item.status || item.region || "Operational update",
-  }));
-  const crewRows = [
-    { id: "crew-desk-1", region: crew.region || "general", available: crew.availableNow ? "Available" : "Watch", queue: dispatchProfile.route?.queue || "general-intake", desk: dispatchProfile.route?.officeHint || "national-desk" },
-    { id: "crew-desk-2", region: dispatchProfile.coverage?.market || "General Coverage", available: capacity.forecast || "available", queue: dispatchProfile.escalationLevel || "office-coordinator", desk: dispatchProfile.coverage?.region || "general" },
-  ];
-  const escalationRows = [
-    { id: "esc-1", queue: dispatchProfile.escalationLevel || "office-coordinator", trigger: dispatchProfile.afterHours ? "After-hours watch" : "Priority threshold", sla: `${schedule.targetResponseHours || 6}h`, owner: dispatchProfile.route?.officeHint || "national-desk" },
-    { id: "esc-2", queue: "dispatch-supervisor", trigger: Number(dispatchProfile.route?.priorityScore || 0) >= 70 ? "High-priority intake" : "Manual escalation", sla: "2h", owner: "regional leadership" },
-  ];
-  const activeJobRows = [
-    { id: "job-desk-1", job: `${dispatchProfile.coverage?.market || "General"} lane support`, phase: schedule.schedulingMode || "standard", owner: dispatchProfile.route?.officeHint || "national-desk", next: "Crew staging" },
-    { id: "job-desk-2", job: `${dispatchProfile.route?.queue || "general-intake"} follow-up`, phase: dispatchProfile.dispatchWindow || "standard-hours", owner: dispatchProfile.escalationLevel || "office-coordinator", next: "Desk review" },
-  ];
-  const taskInboxRows = [
-    { id: "task-1", task: "Review dispatch priority", due: "Now", owner: dispatchProfile.route?.officeHint || "national-desk", status: "Open" },
-    { id: "task-2", task: "Confirm next crew handoff", due: `${schedule.targetResponseHours || 6}h`, owner: "field dispatch", status: "Queued" },
-  ];
-  const documentApprovalRows = [
-    { id: "doc-approve-1", packet: "Traffic plan packet", status: "Pending approval", reviewer: "document review", next: "Manager release" },
-    { id: "doc-approve-2", packet: "Crew setup sheet", status: "Ready", reviewer: dispatchProfile.route?.officeHint || "national-desk", next: "Issue to field lead" },
-  ];
-  const urgentAlerts = [
-    `Desk: ${dispatchProfile.route?.officeHint || "national-desk"} · Queue: ${dispatchProfile.route?.queue || "general-intake"}`,
-    `Capacity forecast: ${capacity.forecast || "available"} · Utilization ${Math.round(Number(capacity.utilization || 0) * 100)}%`,
-    dispatchProfile.afterHours ? "After-hours dispatch posture is active." : "Standard-hours dispatch posture is active.",
-  ];
-  const handoffRows = [
-    { id: "handoff-1", from: "intake desk", to: dispatchProfile.route?.officeHint || "national-desk", reason: "Quote routed for desk review", window: "Immediate" },
-    { id: "handoff-2", from: dispatchProfile.route?.officeHint || "national-desk", to: "field dispatch", reason: "Crew readiness and site prep", window: `${schedule.targetResponseHours || 6}h` },
-  ];
+  const dispatchRows = [];
+  const timelineRows = [];
+  const feedRows = [];
+  const crewRows = [];
+  const escalationRows = [];
+  const activeJobRows = [];
+  const taskInboxRows = [];
+  const documentApprovalRows = [];
+  const urgentAlerts = [];
+  const handoffRows = [];
   const managerActions = [
     { kicker: "Review", label: "Open jobs", body: "Move from desk posture into active jobs and scheduled work.", onClick: () => onNavigate("jobs") },
     { kicker: "Route", label: "Open booking", body: "Review intake, support tickets, and service follow-up from the desk.", onClick: () => onNavigate("booking") },
@@ -398,9 +365,9 @@ function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
             palette
           )}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-            {metricCard("Office Desk", dispatchProfile.route?.officeHint || "national-desk", "Current routing desk resolved from the manager profile.", palette)}
-            {metricCard("Market", dispatchProfile.route?.market || "General Coverage", "Coverage market tied to the manager desk.", palette)}
-            {metricCard("Capacity", capacity.forecast || "available", `Utilization ${Math.round(Number(capacity.utilization || 0) * 100)}%`, palette)}
+            {metricCard("Office Desk", user?.employeeProfile?.office || "Not set", "Office assignment saved on this account profile.", palette)}
+            {metricCard("Market", deskMarket || "Not set", "Selected market is a local view preference only.", palette)}
+            {metricCard("Dispatch Feed", "Not connected", "Live queues and capacity are unavailable.", palette)}
             {metricCard("Crew Ready", crew.availableNow ? "Yes" : "Watch", `${crew.region || "general"} coverage status`, palette)}
           </div>
           <div style={{ marginTop: 16, display: "grid", gap: 6 }}>
@@ -444,11 +411,11 @@ function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
             Urgent Alerts
           </div>
           <div style={{ display: "grid", gap: 10 }}>
-            {urgentAlerts.map((item) => (
+              {urgentAlerts.length ? urgentAlerts.map((item) => (
               <div key={item} style={{ borderRadius: 16, border: `1px solid ${palette.accent}`, background: palette.accentSoft, padding: 14, fontSize: 13.5, lineHeight: 1.65, color: palette.dark, fontFamily: WDWRIGHT_THEME.sans }}>
                 {item}
               </div>
-            ))}
+              )) : <div style={{ color: palette.muted, fontSize: 13 }}>No live dispatch alerts are connected.</div>}
           </div>
         </>,
         palette
@@ -485,6 +452,8 @@ function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
                 { key: "score", label: "Signal" },
               ]}
               rows={dispatchRows}
+              emptyTitle="No dispatch connection"
+              emptyBody="Live queue and assignment data are unavailable."
             />
           </>,
           palette
@@ -502,6 +471,8 @@ function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
                 { key: "owner", label: "Owner" },
               ]}
               rows={timelineRows}
+              emptyTitle="No live timeline"
+              emptyBody="Job milestones will appear when an operations feed is connected."
             />
           </>,
           palette
@@ -522,6 +493,8 @@ function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
                 { key: "desk", label: "Desk" },
               ]}
               rows={crewRows}
+              emptyTitle="No crew feed"
+              emptyBody="Crew availability is not connected."
             />
           </>,
           palette
@@ -540,6 +513,8 @@ function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
                 { key: "owner", label: "Owner" },
               ]}
               rows={escalationRows}
+              emptyTitle="No escalation queue"
+              emptyBody="Escalation data is not connected."
             />
           </>,
           palette
@@ -559,6 +534,8 @@ function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
                 { key: "detail", label: "Detail" },
               ]}
               rows={feedRows}
+              emptyTitle="No shift feed"
+              emptyBody="Shift updates are not connected."
             />
           </>,
           palette
@@ -570,10 +547,10 @@ function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
             </div>
             <div style={{ display: "grid", gap: 10 }}>
               {[
-                `Scheduling mode: ${schedule.schedulingMode || "standard"}`,
-                `Target response: ${schedule.targetResponseHours || 6} hours`,
-                `Escalation lane: ${dispatchProfile.escalationLevel || "office-coordinator"}`,
-                `Support tier: ${user?.userDatabase?.supportTier || "standard"}`,
+                `Selected market: ${deskMarket || "Not set"}`,
+                `Department: ${user?.employeeProfile?.department || "Not set"}`,
+                `Support tier: ${user?.userDatabase?.supportTier || "Not set"}`,
+                "Live scheduling and escalation are not connected.",
               ].map((item) => (
                 <div key={item} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <span style={{ color: palette.accent, fontWeight: 800 }}>•</span>
@@ -600,6 +577,8 @@ function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
                 { key: "next", label: "Next step" },
               ]}
               rows={activeJobRows}
+              emptyTitle="No connected jobs"
+              emptyBody="Active jobs are not available in the current account feed."
             />
           </>,
           palette
@@ -618,6 +597,8 @@ function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
                 { key: "status", label: "Status" },
               ]}
               rows={taskInboxRows}
+              emptyTitle="No manager tasks"
+              emptyBody="Manager tasks are not connected."
             />
           </>,
           palette
@@ -638,6 +619,8 @@ function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
                 { key: "next", label: "Next step" },
               ]}
               rows={documentApprovalRows}
+              emptyTitle="No approval queue"
+              emptyBody="Document approvals are not connected."
             />
           </>,
           palette
@@ -656,6 +639,8 @@ function WrightManagersDeskView({ user, palette, onNavigate, isAdmin }) {
                 { key: "window", label: "Window" },
               ]}
               rows={handoffRows}
+              emptyTitle="No handoffs"
+              emptyBody="Cross-office handoff data is not connected."
             />
           </>,
           palette
@@ -689,10 +674,9 @@ function WrightPassportView({ user, palette }) {
     ["Profile updated", Boolean(user?.updatedAt || user?.createdAt)],
     ["Protected pages available", true],
   ];
-  const trustedDevices = [
-    { id: "current", device: "Current browser", status: user?.security?.trustedDevice ? "Trusted" : "Review", access: user?.security?.trustedDevice ? "Persistent" : "Manual review" },
-    { id: "oneid", device: "WD Wright OneID", status: "Active", access: "Cross-page sync" },
-  ];
+  const trustedDevices = user?.security?.trustedDevice
+    ? [{ id: "current", device: "Current browser", status: "Trusted", access: "Persistent" }]
+    : [];
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
@@ -775,22 +759,10 @@ function WrightSupportDeskView({ palette, onNavigate, onOpenPublicPage }) {
     ["Scheduling", "Keep operations milestones and timeline handling inside the signed-in shell.", () => onNavigate("scheduling")],
     ["Profile", "Deepen the account record so later requests become faster and cleaner.", () => onNavigate("profile")],
   ];
-  const dispatchRows = [
-    { id: "dispatch-1", queue: "Planning", status: "Priority", office: "Regional desk", eta: "2h first touch" },
-    { id: "dispatch-2", queue: "Flagging", status: "Standard", office: "Field routing", eta: "Same day" },
-  ];
-  const crewRows = [
-    { id: "crew-1", region: "North Carolina", availability: "Available", band: "Field standard" },
-    { id: "crew-2", region: "Florida", availability: "Watchlist", band: "Specialized / TMA" },
-  ];
-  const ticketRows = [
-    { id: "ticket-1", subject: "Quote follow-up", owner: "Intake desk", status: "Open", updated: "Today" },
-    { id: "ticket-2", subject: "Coverage confirmation", owner: "Regional office", status: "Waiting", updated: "1d ago" },
-  ];
-  const commentRows = [
-    { id: "comment-1", by: "WD Wright", note: "Regional routing reviewed and ready for next call.", time: "9:18 AM" },
-    { id: "comment-2", by: "Account", note: "Project details updated with location and timing.", time: "Yesterday" },
-  ];
+  const dispatchRows = [];
+  const crewRows = [];
+  const ticketRows = [];
+  const commentRows = [];
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
@@ -824,7 +796,7 @@ function WrightSupportDeskView({ palette, onNavigate, onOpenPublicPage }) {
             <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: palette.strong, marginBottom: 10 }}>
               Dispatch Status
             </div>
-            <ResponsiveDataList
+            {dispatchRows.length ? <ResponsiveDataList
               palette={palette}
               columns={[
                 { key: "queue", label: "Queue" },
@@ -833,7 +805,7 @@ function WrightSupportDeskView({ palette, onNavigate, onOpenPublicPage }) {
                 { key: "eta", label: "First Touch" },
               ]}
               rows={dispatchRows}
-            />
+            /> : <p style={{ color: palette.muted, fontSize: 13 }}>Dispatch is not connected to this account yet. No priority or response-time estimate is available.</p>}
           </>,
           palette
         )}
@@ -842,7 +814,7 @@ function WrightSupportDeskView({ palette, onNavigate, onOpenPublicPage }) {
             <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: palette.strong, marginBottom: 10 }}>
               Crew Availability
             </div>
-            <ResponsiveDataList
+            {crewRows.length ? <ResponsiveDataList
               palette={palette}
               columns={[
                 { key: "region", label: "Region" },
@@ -850,7 +822,7 @@ function WrightSupportDeskView({ palette, onNavigate, onOpenPublicPage }) {
                 { key: "band", label: "Crew Band" },
               ]}
               rows={crewRows}
-            />
+            /> : <p style={{ color: palette.muted, fontSize: 13 }}>Live crew availability is not connected.</p>}
           </>,
           palette
         )}
@@ -870,6 +842,8 @@ function WrightSupportDeskView({ palette, onNavigate, onOpenPublicPage }) {
                 { key: "updated", label: "Updated" },
               ]}
               rows={ticketRows}
+              emptyTitle="No support tickets"
+              emptyBody="Support ticket history is not connected to this account yet."
             />
           </>,
           palette
@@ -887,6 +861,8 @@ function WrightSupportDeskView({ palette, onNavigate, onOpenPublicPage }) {
                 { key: "time", label: "Time" },
               ]}
               rows={commentRows}
+              emptyTitle="No comments"
+              emptyBody="Request comments will appear here when account messaging is enabled."
             />
           </>,
           palette
@@ -903,10 +879,7 @@ function WrightSettingsView({ user, palette, themeMode, setThemeMode, onLogout }
     ["Interface Theme", "Theme choice stays consistent across public and signed-in WD Wright pages."],
     ["Notifications & Support", "Alerts, document handling, and support activity remain tied to the same account."],
   ];
-  const billingRows = [
-    { id: "invoice-1", invoice: "Verified billing", amount: "$20.00", status: "Setup", date: "Pending" },
-    { id: "invoice-2", invoice: "Platform fee", amount: "On demand", status: "As needed", date: "Per request" },
-  ];
+  const billingRows = [];
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
@@ -974,7 +947,7 @@ function WrightSettingsView({ user, palette, themeMode, setThemeMode, onLogout }
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
               {metricCard("Verified Billing", "Setup", "Protected billing state follows the account shell.", palette)}
-              {metricCard("Payment History", "Visible", "Invoices and charges can be reviewed in one signed-in place.", palette)}
+              {metricCard("Payment History", "Not connected", "Invoice and charge records are unavailable until billing is connected.", palette)}
               {metricCard("Account Scope", user?.email || "Pending", "Billing remains tied to the same WD Wright account.", palette)}
             </div>
           </>,
@@ -994,11 +967,14 @@ function WrightSettingsView({ user, palette, themeMode, setThemeMode, onLogout }
                 { key: "date", label: "Date" },
               ]}
               rows={billingRows}
+              emptyTitle="No billing records"
+              emptyBody="Billing and invoice history are not connected to this account yet."
             />
           </>,
           palette
         )}
       </div>
+      <NotificationPreferencesPanel palette={palette} />
     </div>
   );
 }
@@ -1033,6 +1009,10 @@ function WrightAccountView({ user, palette, onNavigate, onLogout }) {
         </>,
         palette
       )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 14 }}>
+        <ProjectContactsPanel palette={palette} />
+        <SavedLocationsPanel palette={palette} />
+      </div>
       <QuickActionRail
         palette={{ line: palette.line, panelSoft: palette.panelSoft, dark: palette.dark, muted: palette.muted, strong: palette.strong }}
         items={[
@@ -1046,47 +1026,26 @@ function WrightAccountView({ user, palette, onNavigate, onLogout }) {
 }
 
 function WrightPaymentsView({ user, palette }) {
-  const paymentMethods = [
-    { id: "pay-1", method: "Business Visa", last4: "4821", status: "Primary", use: "Verified billing and on-demand charges" },
-    { id: "pay-2", method: "ACH account", last4: "7714", status: "Backup", use: "Large project settlement" },
-  ];
   return (
     <div style={{ display: "grid", gap: 18 }}>
       {surface(
         <>
           {sectionTitle(
             "Payment Information",
-            "Payment methods and protected billing instruments.",
-            "Use this area to review the payment methods connected to the account and how they are used across WD Wright billing flows.",
+            "Billing is not connected yet.",
+            "No payment method is stored in this account, and no billing provider is connected to this view.",
             palette
           )}
-          <ResponsiveDataList
-            palette={palette}
-            columns={[
-              { key: "method", label: "Method" },
-              { key: "last4", label: "Last 4" },
-              { key: "status", label: "Status" },
-              { key: "use", label: "Use" },
-            ]}
-            rows={paymentMethods}
-          />
+          <div style={{ border: `1px dashed ${palette.line}`, borderRadius: 14, padding: 16, color: palette.muted, fontSize: 13 }}>Payment setup and transaction history will appear here after a billing provider is configured and connected to your account.</div>
         </>,
         palette
       )}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-        {metricCard("Protected Methods", String(paymentMethods.length), "Payment methods remain tied to the signed-in WD Wright account.", palette)}
-        {metricCard("Primary Method", "Card", "Ready for verified billing and quote-adjacent charges.", palette)}
-        {metricCard("Fallback Method", "ACH", "Backup settlement method for project workflows.", palette)}
-      </div>
     </div>
   );
 }
 
 function WrightReceiptsView({ palette }) {
-  const receiptRows = [
-    { id: "receipt-1", receipt: "RCPT-2048", category: "Verified billing", amount: "$20.00", date: "2026-05-07" },
-    { id: "receipt-2", receipt: "RCPT-1987", category: "Project release", amount: "$145.00", date: "2026-04-28" },
-  ];
+  const receiptRows = [];
   return (
     <div style={{ display: "grid", gap: 18 }}>
       {surface(
@@ -1106,6 +1065,8 @@ function WrightReceiptsView({ palette }) {
               { key: "date", label: "Date" },
             ]}
             rows={receiptRows}
+            emptyTitle="No receipts available"
+            emptyBody="Receipt history will appear after billing is connected and a charge is recorded."
           />
         </>,
         palette
@@ -1114,34 +1075,24 @@ function WrightReceiptsView({ palette }) {
   );
 }
 
-function WrightJobsView({ palette, onNavigate }) {
-  const jobs = [
-    { id: "job-1", job: "NC lane closure support", phase: "Scheduled", owner: "Regional office", next: "Crew staging" },
-    { id: "job-2", job: "FL project watch", phase: "Planning", owner: "Dispatch", next: "Coverage confirmation" },
-  ];
+function WrightJobsView({ palette, onNavigate, onOpenPublicPage }) {
   return (
     <div style={{ display: "grid", gap: 18 }}>
       {surface(
         <>
           {sectionTitle(
             "Jobs",
-            "Active work, queued work, and job-level status.",
-            "Use the jobs area to review active or upcoming account-linked work without mixing it into the broader dashboard.",
+            "Field readiness and job notes.",
+            "No dispatch assignments are connected to this account yet. Prepare a device-local brief or checklist for reference.",
             palette
           )}
-          <ResponsiveDataList
-            palette={palette}
-            columns={[
-              { key: "job", label: "Job" },
-              { key: "phase", label: "Phase" },
-              { key: "owner", label: "Owner" },
-              { key: "next", label: "Next step" },
-            ]}
-            rows={jobs}
-          />
+          <div style={{ border: `1px dashed ${palette.line}`, borderRadius: 14, padding: 16, color: palette.muted, fontSize: 13 }}>Live jobs and schedule changes will appear here when the WD Wright operations feed is connected.</div>
         </>,
         palette
       )}
+      <FieldJobBriefPanel palette={palette} />
+      <FieldReadinessPanel palette={palette} />
+      <SafetyResourcesPanel palette={palette} onOpenResources={() => onOpenPublicPage("/resources")} />
       <QuickActionRail
         palette={{ line: palette.line, panelSoft: palette.panelSoft, dark: palette.dark, muted: palette.muted, strong: palette.strong }}
         items={[
@@ -1153,31 +1104,18 @@ function WrightJobsView({ palette, onNavigate }) {
   );
 }
 
-function WrightMessagesView({ palette }) {
-  const messageRows = [
-    { id: "msg-1", from: "WD Wright intake", subject: "Quote request received", status: "Unread", when: "Today" },
-    { id: "msg-2", from: "Regional office", subject: "Coverage follow-up", status: "Read", when: "Yesterday" },
-  ];
+function WrightMessagesView({ palette, onNavigate }) {
   return (
     <div style={{ display: "grid", gap: 18 }}>
       {surface(
         <>
           {sectionTitle(
             "Messages",
-            "Inbox-style account messaging for follow-up and coordination.",
-            "This page gives the account a direct message surface separate from alerts and support summaries.",
+            "Follow-up and request conversations.",
+            "There are no connected messages yet. Use booking to send a request; account messaging will appear here when the backend conversation feed is enabled.",
             palette
           )}
-          <ResponsiveDataList
-            palette={palette}
-            columns={[
-              { key: "from", label: "From" },
-              { key: "subject", label: "Subject" },
-              { key: "status", label: "Status" },
-              { key: "when", label: "When" },
-            ]}
-            rows={messageRows}
-          />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap", border: `1px dashed ${palette.line}`, borderRadius: 14, padding: 16 }}><span style={{ color: palette.muted, fontSize: 13 }}>No sample conversations are shown.</span><button type="button" onClick={() => onNavigate("booking")} style={{ border: 0, borderRadius: 12, padding: "10px 14px", background: palette.accent, color: palette.accentText, fontWeight: 800, cursor: "pointer" }}>Open booking</button></div>
         </>,
         palette
       )}
@@ -1185,11 +1123,7 @@ function WrightMessagesView({ palette }) {
   );
 }
 
-function WrightFeedbackView({ palette }) {
-  const feedbackRows = [
-    { id: "fb-1", area: "Quote flow", status: "Open", owner: "Product review", updated: "Today" },
-    { id: "fb-2", area: "Document experience", status: "Planned", owner: "UX review", updated: "This week" },
-  ];
+function WrightFeedbackView({ palette, onOpenPublicPage }) {
   return (
     <div style={{ display: "grid", gap: 18 }}>
       {surface(
@@ -1197,61 +1131,29 @@ function WrightFeedbackView({ palette }) {
           {sectionTitle(
             "Feedback",
             "User feedback, requests, and experience follow-up.",
-            "This page gives account holders a dedicated place for product feedback instead of burying it inside notifications or support.",
+            "Feedback history is not connected to this account yet. Send a note through the contact page instead.",
             palette
           )}
-          <ResponsiveDataList
-            palette={palette}
-            columns={[
-              { key: "area", label: "Area" },
-              { key: "status", label: "Status" },
-              { key: "owner", label: "Owner" },
-              { key: "updated", label: "Updated" },
-            ]}
-            rows={feedbackRows}
-          />
+          <div style={{ border: `1px dashed ${palette.line}`, borderRadius: 14, padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}><span style={{ color: palette.muted, fontSize: 13 }}>No submitted feedback is linked to this account.</span><button type="button" onClick={() => onOpenPublicPage("/contact")} style={{ border: 0, borderRadius: 12, padding: "10px 14px", background: palette.accent, color: palette.accentText, fontWeight: 800, cursor: "pointer" }}>Contact WD Wright</button></div>
         </>,
         palette
       )}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-        {metricCard("Tracked items", String(feedbackRows.length), "Open or planned feedback items tied to the account shell.", palette)}
-        {metricCard("Response lane", "Active", "Feedback can be reviewed with support and product follow-up.", palette)}
-      </div>
     </div>
   );
 }
 
 function WrightSchedulingView({ palette, onNavigate }) {
-  const calendarRows = [
-    { id: "day-1", day: "Mon", focus: "Pre-job review", status: "Planned", coverage: "Regional office" },
-    { id: "day-2", day: "Tue", focus: "Crew staging", status: "Ready", coverage: "Field dispatch" },
-    { id: "day-3", day: "Wed", focus: "Lane setup", status: "Active", coverage: "Operations lead" },
-    { id: "day-4", day: "Thu", focus: "Traffic flow review", status: "Monitor", coverage: "Safety oversight" },
-    { id: "day-5", day: "Fri", focus: "Closeout and packet check", status: "Next", coverage: "Account follow-up" },
-  ];
-
   return (
     <div style={{ display: "grid", gap: 18 }}>
       {surface(
         <>
           {sectionTitle(
             "Scheduling",
-            "Calendar, milestones, and operational timing in one place.",
-            "Use the WD Wright scheduling area to understand timing, activity windows, and the next required handoff across active work.",
+            "Upcoming work and schedule changes.",
+            "No live work schedule is connected to this account yet. Submitted requests are not job assignments; confirmed dates will appear here once the operations feed is available.",
             palette
           )}
-          <ResponsiveDataList
-            palette={palette}
-            columns={[
-              { key: "day", label: "Day" },
-              { key: "focus", label: "Primary Focus" },
-              { key: "status", label: "Status" },
-              { key: "coverage", label: "Coverage" },
-            ]}
-            rows={calendarRows}
-            emptyTitle="No scheduling view"
-            emptyBody="Calendar guidance will appear here once active work is linked to the account."
-          />
+          <div style={{ border: `1px dashed ${palette.line}`, borderRadius: 14, padding: 16, color: palette.muted, fontSize: 13 }}>Schedule and change notifications are unavailable until an operations schedule is linked to your account.</div>
         </>,
         palette
       )}
@@ -1271,7 +1173,7 @@ function WrightSchedulingView({ palette, onNavigate }) {
         </>,
         palette
       )}
-      <TransactionMilestonesView onNavigate={onNavigate} deals={[]} />
+      <FieldReadinessPanel palette={palette} />
     </div>
   );
 }
@@ -1371,70 +1273,8 @@ function WrightResourcesView({ palette, onNavigate, onOpenPublicPage }) {
   );
 }
 
-function WrightDocumentsView({ palette, notify }) {
-  const [previewFile, setPreviewFile] = useState(null);
-  const documentStatusRows = [
-    { id: "doc-1", packet: "Quote packet", status: "Pending review", owner: "Document review", next: "Confirm metadata" },
-    { id: "doc-2", packet: "Identity file", status: "Protected", owner: "Verification desk", next: "Await release" },
-  ];
-  const shareRows = [
-    { id: "share-1", link: "Project packet link", expires: "24 hours", access: "Password protected" },
-    { id: "share-2", link: "Billing summary link", expires: "72 hours", access: "Account viewer" },
-  ];
-  const previewRows = [
-    { id: "preview-1", name: "Traffic plan packet", type: "Planning", status: "Pending", access: "Protected", nextStep: "Review geometry", summary: "Preview planning packet context before the final release workflow." },
-    { id: "preview-2", name: "Crew setup sheet", type: "Operations", status: "Ready", access: "Account team", nextStep: "Issue to field lead", summary: "Preview the crew-facing setup summary and next handoff." },
-  ];
-
-  return (
-    <div style={{ display: "grid", gap: 18 }}>
-      {surface(
-        <>
-          {sectionTitle(
-            "Documents",
-            "Protected files, status, previews, and share controls.",
-            "Keep document status, expiring links, and previews together with the main document vault so supporting files stay easier to follow.",
-            palette
-          )}
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 18 }}>
-            <ResponsiveDataList
-              palette={palette}
-              columns={[
-                { key: "packet", label: "Packet" },
-                { key: "status", label: "Status" },
-                { key: "owner", label: "Owner" },
-                { key: "next", label: "Next step" },
-              ]}
-              rows={documentStatusRows}
-            />
-            <ResponsiveDataList
-              palette={palette}
-              columns={[
-                { key: "link", label: "Share link" },
-                { key: "expires", label: "Expires" },
-                { key: "access", label: "Access" },
-              ]}
-              rows={shareRows}
-            />
-          </div>
-          <div style={{ marginTop: 18 }}>
-            <QuickActionRail
-              palette={{ line: palette.line, panelSoft: palette.panelSoft, dark: palette.dark, muted: palette.muted, strong: palette.strong }}
-              items={previewRows.map((item) => ({
-                kicker: "Preview",
-                label: item.name,
-                body: `${item.type} · ${item.status} · ${item.nextStep}`,
-                onClick: () => setPreviewFile(item),
-              }))}
-            />
-          </div>
-        </>,
-        palette
-      )}
-      <DocumentVaultView notify={notify} docs={[]} deals={[]} />
-      <FilePreviewModal open={Boolean(previewFile)} file={previewFile} onClose={() => setPreviewFile(null)} palette={{ line: palette.line, panel: palette.panel, panelSoft: palette.panelSoft, muted: palette.muted, dark: palette.dark, strong: palette.strong }} />
-    </div>
-  );
+function WrightDocumentsView({ palette, onOpenPublicPage }) {
+  return <div style={{ display: "grid", gap: 18 }}><DocumentReadinessPanel palette={palette} onOpenPublicPage={onOpenPublicPage} /><SafetyResourcesPanel palette={palette} onOpenResources={() => onOpenPublicPage("/resources")} /></div>;
 }
 
 function WrightAdminQueueView({ palette, isAdmin }) {
@@ -1582,12 +1422,6 @@ export default function WDWrightAuthenticatedApp({ initialUser, onLogout, onSave
     return saved;
   }
 
-  const activityRows = [
-    { id: "activity-1", type: "Profile", detail: "Account preferences updated and synced", when: "Today" },
-    { id: "activity-2", type: "Security", detail: "OneID session remains active across the shell", when: "Today" },
-    { id: "activity-3", type: "Documents", detail: "Document vault is available for protected uploads", when: "This week" },
-  ];
-
   return (
     <div style={{ minHeight: "100vh", background: palette.background, color: palette.text, fontFamily: WDWRIGHT_THEME.sans }}>
       <div className="wdw-auth-shell-width" style={{ width: "min(1440px, 100%)", margin: "0 auto", padding: 18 }}>
@@ -1680,12 +1514,7 @@ export default function WDWrightAuthenticatedApp({ initialUser, onLogout, onSave
                     Activity Feed
                   </div>
                   <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                    {activityRows.map((item) => (
-                      <div key={item.id} style={{ paddingBottom: 8, borderBottom: `1px solid ${palette.line}` }}>
-                        <div style={{ fontSize: 12.5, fontWeight: 800, color: palette.dark }}>{item.type}</div>
-                        <div style={{ marginTop: 4, fontSize: 11.5, lineHeight: 1.6, color: palette.muted }}>{item.detail} · {item.when}</div>
-                      </div>
-                    ))}
+                    <div style={{ padding: 10, color: palette.muted, fontSize: 11.5, lineHeight: 1.55 }}>Live activity is not connected yet. Account actions will appear here when the backend activity feed is enabled.</div>
                   </div>
                 </div>
                 <button type="button" onClick={() => setCommandOpen(true)} style={{ borderRadius: 16, border: `1px solid ${palette.line}`, background: "transparent", color: palette.dark, minHeight: 46, cursor: "pointer", fontWeight: 800, fontFamily: WDWRIGHT_THEME.sans }}>
@@ -1717,15 +1546,15 @@ export default function WDWrightAuthenticatedApp({ initialUser, onLogout, onSave
             {view === "account" ? <WrightAccountView user={user} palette={palette} onNavigate={navigate} onLogout={onLogout} /> : null}
             {view === "payments" ? <WrightPaymentsView user={user} palette={palette} /> : null}
             {view === "receipts" ? <WrightReceiptsView palette={palette} /> : null}
-            {view === "jobs" ? <WrightJobsView palette={palette} onNavigate={navigate} /> : null}
-            {view === "messages" ? <WrightMessagesView palette={palette} /> : null}
+            {view === "jobs" ? <WrightJobsView palette={palette} onNavigate={navigate} onOpenPublicPage={onOpenPublicPage} /> : null}
+            {view === "messages" ? <WrightMessagesView palette={palette} onNavigate={navigate} /> : null}
             {view === "manager-desk" && isManager ? <WrightManagersDeskView user={user} palette={palette} onNavigate={navigate} isAdmin={isAdmin} /> : null}
             {view === "security" ? <WrightPassportView user={user} palette={palette} /> : null}
             {view === "booking" ? <WrightSupportDeskView palette={palette} onNavigate={navigate} onOpenPublicPage={onOpenPublicPage} /> : null}
-            {view === "documents" ? <WrightDocumentsView palette={palette} notify={notify} /> : null}
+            {view === "documents" ? <WrightDocumentsView palette={palette} onOpenPublicPage={onOpenPublicPage} /> : null}
             {view === "scheduling" ? <WrightSchedulingView palette={palette} onNavigate={navigate} /> : null}
             {view === "notifications" ? <NotificationCenterView onNavigate={navigate} notify={notify} /> : null}
-            {view === "feedback" ? <WrightFeedbackView palette={palette} /> : null}
+            {view === "feedback" ? <WrightFeedbackView palette={palette} onOpenPublicPage={onOpenPublicPage} /> : null}
             {view === "settings" ? <WrightSettingsView user={user} palette={palette} themeMode={themeMode} setThemeMode={setThemeMode} onLogout={onLogout} /> : null}
             {view === "resources" ? <WrightResourcesView palette={palette} onNavigate={navigate} onOpenPublicPage={onOpenPublicPage} /> : null}
             {view === "admin-workbench" && isAdmin ? (

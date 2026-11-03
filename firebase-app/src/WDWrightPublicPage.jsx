@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import WDWrightBrandLockup from "./WDWrightBrandLockup.jsx";
 import WDWrightPublicFooter from "./WDWrightPublicFooter.jsx";
+import { WrightAccessibilityControls, WrightCareersExperience } from "./WDWrightCareersAccessSuite.jsx";
 import { EmptyPanel, HelpDrawer, InlineFieldMessage, QuickActionRail, SegmentedThemeToggle, StatusPill, Stepper } from "./WDWrightUiKit.jsx";
 import { useWrightThemeMode, WRIGHT_THEME_OPTIONS } from "./wd-wright-theme-sync.js";
 import { WDWRIGHT_THEME } from "./wd-wright-theme.js";
@@ -127,8 +128,6 @@ const PUBLIC_VIEWS = {
   dmca: "Wright DMCA Policy",
 };
 const AUTH_REQUIRED_VIEWS = new Set([
-  "contact",
-  "quote",
   "resources",
   "help",
 ]);
@@ -301,10 +300,11 @@ function Shell({ children, onNavigate, themeMode, onThemeChange, firebaseUser, c
             ) : null}
           </div>
         </header>
-        <main id="wdw-main" className="wdw-shell-main">
+        <main id="main-content" className="wdw-shell-main" tabIndex={-1}>
           {children}
         </main>
         <WDWrightPublicFooter themeMode={themeMode} onNavigate={onNavigate} />
+        <WrightAccessibilityControls />
         <div
           style={{
             position: "relative",
@@ -870,11 +870,11 @@ function LocationsView() {
             </select>
           </label>
           <label style={{ display: "grid", gap: 6, fontFamily: P.sans, fontSize: 12.5, fontWeight: 700, color: P.text, marginBottom: 12 }}>
-            Availability checker
+            Find a listed market
             <input
               value={availabilityQuery}
               onChange={(event) => setAvailabilityQuery(event.target.value)}
-              placeholder="Enter state, city, or region"
+              placeholder="Enter a city or state"
               style={{ minHeight: 44, borderRadius: 10, border: `1px solid ${P.line}`, padding: "0 12px", fontFamily: P.sans, fontSize: 14, background: P.fieldBg, color: P.fieldText }}
             />
           </label>
@@ -885,9 +885,11 @@ function LocationsView() {
             <div style={{ marginTop: 6, fontFamily: P.sans, fontSize: 13.5, lineHeight: 1.65, color: P.muted }}>
               {availabilityQuery.trim()
                 ? availabilityMatch
-                  ? `Coverage signs point to ${availabilityMatch.state}. Use the office launcher below to open map routing.`
-                  : "No direct match yet. Use the office selector or contact WD Wright for coverage confirmation."
-                : `Selected office region: ${selectedRegion.state}.`}
+                  ? `${availabilityMatch.state} is listed on this site. This directory does not confirm crew availability for a specific project; contact the office for confirmation.`
+                  : /^\d{5}$/.test(availabilityQuery.trim())
+                    ? `ZIP ${availabilityQuery.trim()} needs office confirmation. The online directory does not verify ZIP-level service availability.`
+                    : "No listed city or state matched. Contact WD Wright and the team can confirm your project location."
+                : `Selected market: ${selectedRegion.state}. Search a city or state to find a listed market.`}
             </div>
           </div>
           <div style={{ display: "grid", gap: 10 }}>
@@ -904,7 +906,7 @@ function LocationsView() {
             rel="noreferrer"
             style={{ display: "inline-flex", marginTop: 18, borderRadius: 999, background: P.amber, color: P.text, textDecoration: "none", padding: "11px 16px", fontFamily: P.sans, fontWeight: 800 }}
           >
-            Launch Office Region
+            Open Region Map
           </a>
         </Surface>
       </div>
@@ -962,108 +964,82 @@ function ResourcesView() {
 }
 
 function CareersView({ onNavigate }) {
-  const [status, setStatus] = useState("");
-  async function handleInterest(role) {
-    const result = await submitLead("career-interest", { role, routeContext: "/careers" });
-    setStatus(result.message);
-  }
-
-  return (
-    <div style={{ display: "grid", gap: 18 }}>
-      <SectionTitle eyebrow="Careers" title="Recruiting should feel organized, serious, and field-ready." body="WD Wright gives candidates a clearer path into field, dispatch, leadership, and support roles across its coverage areas." />
-      <CardGrid columns={2}>
-        <Surface>
-          <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 14, background: "#d7dfd9" }}>
-            <img src="/wdwright/careers-field-crew.jpg" alt="WD Wright field crew" style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
-          </div>
-          <div style={{ fontFamily: P.display, fontSize: 28, lineHeight: 1, textTransform: "uppercase", marginBottom: 12 }}>Open roles</div>
-          <div style={{ display: "grid", gap: 10 }}>
-            {OPEN_ROLES.map(([role, team, market]) => (
-              <div key={role} style={{ borderBottom: `1px solid ${P.line}`, paddingBottom: 12 }}>
-                <div style={{ fontFamily: P.sans, fontSize: 15, fontWeight: 800 }}>{role}</div>
-                <div style={{ fontFamily: P.sans, fontSize: 13, color: P.muted, marginTop: 4 }}>{team} · {market}</div>
-                <button type="button" onClick={() => handleInterest(role)} style={{ marginTop: 10, border: "none", background: P.amber, borderRadius: 999, padding: "10px 14px", cursor: "pointer", fontFamily: P.sans, fontWeight: 800 }}>
-                  Express Interest
-                </button>
-              </div>
-            ))}
-          </div>
-        </Surface>
-        <Surface tone="soft">
-          <div style={{ fontFamily: P.display, fontSize: 28, lineHeight: 1, textTransform: "uppercase", marginBottom: 12 }}>Why work with WD Wright</div>
-          <div style={{ display: "grid", gap: 10 }}>
-            {CAREER_BENEFITS.map((item) => (
-              <div key={item} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <span style={{ color: P.amber, fontWeight: 800 }}>•</span>
-                <span style={{ fontFamily: P.sans, fontSize: 13.5, lineHeight: 1.7, color: P.muted }}>{item}</span>
-              </div>
-            ))}
-          </div>
-          <button type="button" onClick={() => onNavigate("/contact")} style={{ marginTop: 18, border: `1px solid ${P.line}`, background: "#fff", borderRadius: 999, padding: "11px 14px", cursor: "pointer", fontFamily: P.sans, fontWeight: 800 }}>
-            Talk To Recruiting
-          </button>
-        </Surface>
-      </CardGrid>
-      {status ? <Surface><div style={{ fontFamily: P.sans, fontSize: 13.5, color: P.muted }}>{status}</div></Surface> : null}
-    </div>
-  );
+  return <WrightCareersExperience
+    roles={OPEN_ROLES}
+    benefits={CAREER_BENEFITS}
+    onInterest={async (role) => submitLead("career-interest", { role, routeContext: "/careers" })}
+    onContactRecruiting={() => onNavigate("/contact")}
+  />;
 }
 
 function ContactOrQuoteView({ mode = "contact", firebaseUser = null, onRequireAuth }) {
-  const draftKey = `wd-wright-${mode}-draft-v1`;
-  const [form, setForm] = useState({
-    name: "",
-    company: "",
-    email: "",
-    phone: "",
-    location: "",
-    service: "",
-    timeline: "",
-    details: "",
-  });
+  const draftKey = `wd-wright-${mode}-draft-v2`;
+  const blankForm = {
+    name: "", company: "", email: "", phone: "", location: "", postalCode: "", service: "",
+    timeline: "", startDate: "", endDate: "", workHours: "", projectRole: "", closure: "",
+    permits: "", details: "",
+  };
+  const [form, setForm] = useState(blankForm);
   const [step, setStep] = useState(0);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(null);
   const [errors, setErrors] = useState({});
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const isQuote = mode === "quote";
+  const steps = [
+    { key: "contact", label: "Contact", detail: "Who should Wright reach?" },
+    { key: "scope", label: "Project", detail: "Where and what support?" },
+    { key: "schedule", label: "Schedule", detail: "When and what conditions?" },
+    { key: "review", label: "Review", detail: "Check before sending" },
+  ];
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const raw = window.localStorage.getItem(draftKey);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object") {
-        setForm((current) => ({ ...current, ...parsed }));
-      }
+      const legacyDraftKey = `wd-wright-${mode}-draft-v1`;
+      const parsed = JSON.parse(window.localStorage.getItem(draftKey) || window.localStorage.getItem(legacyDraftKey) || "null");
+      if (parsed && typeof parsed === "object") setForm((current) => ({ ...current, ...parsed }));
     } catch {
-      // Non-blocking.
+      window.localStorage.removeItem(draftKey);
     }
+    setDraftLoaded(true);
   }, [draftKey]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!draftLoaded || typeof window === "undefined") return;
     try {
       window.localStorage.setItem(draftKey, JSON.stringify(form));
     } catch {
-      // Non-blocking.
+      // Storage can be unavailable in private browsing; the form still works in memory.
     }
-  }, [draftKey, form]);
+  }, [draftKey, draftLoaded, form]);
 
-  function validate(nextStep = step) {
+  useEffect(() => {
+    if (!draftLoaded || !firebaseUser) return;
+    setForm((current) => ({
+      ...current,
+      name: current.name || firebaseUser.displayName || "",
+      email: current.email || firebaseUser.email || "",
+    }));
+  }, [draftLoaded, firebaseUser]);
+
+  function validate(nextStep) {
     const nextErrors = {};
     if (nextStep === 0) {
-      if (!form.name.trim()) nextErrors.name = "Name is required.";
-      if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) nextErrors.email = "A valid email is required.";
-      if (!form.phone.trim() && !form.company.trim()) nextErrors.phone = "Add a phone number or company so follow-up is practical.";
+      if (form.name.trim().length < 2) nextErrors.name = "Enter your name.";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) nextErrors.email = "Enter a valid email address.";
+      if (form.phone && form.phone.replace(/\D/g, "").length < 7) nextErrors.phone = "Enter a valid phone number or clear this field.";
     }
     if (nextStep === 1) {
-      if (!form.location.trim()) nextErrors.location = "Project location is required.";
-      if (!form.service.trim()) nextErrors.service = "Service type is required.";
-      if (!form.timeline.trim()) nextErrors.timeline = "Timeline is required.";
+      if (form.location.trim().length < 3) nextErrors.location = "Add a city, state, or project address.";
+      if (form.postalCode && !/^\d{5}(-\d{4})?$/.test(form.postalCode.trim())) nextErrors.postalCode = "Enter a 5-digit ZIP code, optionally followed by 4 digits.";
+      if (!form.service) nextErrors.service = "Choose the service that best fits.";
     }
-    if (nextStep === 2 && form.details.trim().length < 16) {
-      nextErrors.details = "Add more project detail so routing is accurate.";
+    if (nextStep === 2) {
+      if (!form.timeline) nextErrors.timeline = "Choose when support is needed.";
+      if (form.startDate && form.endDate && form.endDate < form.startDate) nextErrors.endDate = "End date must be on or after the start date.";
     }
+    if (nextStep === 3 && form.details.trim().length < 12) nextErrors.details = "Add a short project note so the team has useful context.";
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   }
@@ -1071,157 +1047,162 @@ function ContactOrQuoteView({ mode = "contact", firebaseUser = null, onRequireAu
   function updateField(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: "" }));
+    setStatus(null);
+  }
+
+  function control(key, label, options = {}) {
+    const { type = "text", hint = "", required = false, placeholder = "" } = options;
+    return (
+      <label key={key} htmlFor={`${mode}-${key}`} style={{ display: "grid", gap: 6, fontFamily: P.sans, fontSize: 13, fontWeight: 750, color: P.text }}>
+        <span>{label}{required ? " *" : ""}</span>
+        <input
+          id={`${mode}-${key}`} name={key} type={type} required={required} value={form[key]} placeholder={placeholder}
+          list={key === "location" ? `${mode}-market-options` : undefined}
+          onChange={(event) => updateField(key, event.target.value)} aria-invalid={!!errors[key]}
+          aria-describedby={errors[key] ? `${mode}-${key}-error` : hint ? `${mode}-${key}-hint` : undefined}
+          style={{ minHeight: 46, borderRadius: 10, border: `1px solid ${errors[key] ? "#b64231" : P.line}`, padding: "0 12px", fontFamily: P.sans, fontSize: 14, background: P.fieldBg, color: P.fieldText }}
+        />
+        {key === "location" ? <datalist id={`${mode}-market-options`}>{LOCATION_GROUPS.flatMap((group) => [group.state, ...group.cities.map((city) => `${city}, ${group.state}`)]).map((market) => <option key={market} value={market} />)}</datalist> : null}
+        {errors[key] ? <span id={`${mode}-${key}-error`} role="alert" style={{ color: "#9a3027", fontSize: 12 }}>{errors[key]}</span> : hint ? <span id={`${mode}-${key}-hint`} style={{ color: P.muted, fontSize: 12, fontWeight: 500 }}>{hint}</span> : null}
+      </label>
+    );
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-    if (!validate(2)) return;
+    for (let requiredStep = 0; requiredStep <= 3; requiredStep += 1) {
+      if (!validate(requiredStep)) {
+        setStep(requiredStep);
+        return;
+      }
+    }
     if (!firebaseUser?.uid) {
-      setStatus("Sign in is required before submitting Wright service intake.");
-      onRequireAuth?.(isQuote ? "/quote" : "/contact");
+      setStatus({ kind: "info", text: "Your draft is saved on this device. Sign in to send it to WD Wright." });
       return;
     }
-
-    const result = await submitLead(isQuote ? "quote-request" : "contact-request", {
-      ...form,
-      routeContext: isQuote ? "/quote" : "/contact",
-    }, {
-      firebaseUser,
-    });
-    setStatus(result.message);
-    setForm({ name: "", company: "", email: "", phone: "", location: "", service: "", timeline: "", details: "" });
-    setErrors({});
-    setStep(0);
+    setSubmitting(true);
     try {
-      window.localStorage.removeItem(draftKey);
-    } catch {
-      // Non-blocking.
+      const result = await submitLead(isQuote ? "quote-request" : "contact-request", {
+        ...form,
+        location: [form.location, form.postalCode && `ZIP ${form.postalCode}`].filter(Boolean).join(", "),
+        details: [form.details, form.closure && `Closure conditions: ${form.closure}`, form.permits && `Plan or permit status: ${form.permits}`].filter(Boolean).join("\n"),
+        timeline: [form.timeline, form.startDate && `Start: ${form.startDate}`, form.endDate && `End: ${form.endDate}`, form.workHours && `Hours: ${form.workHours}`].filter(Boolean).join("; "),
+        role: form.projectRole,
+        routeContext: isQuote ? "/quote" : "/contact",
+      }, { firebaseUser });
+      setStatus({
+        kind: result.persisted === "firestore" ? "success" : "warning",
+        text: result.persisted === "firestore"
+          ? `Your request was received by WD Wright${result.entry?.id ? ` (reference ${result.entry.id})` : ""}. Keep this confirmation for your records.`
+          : "This browser saved a local copy, but WD Wright has not received the request. Please contact the team directly to make sure it reaches them.",
+      });
+      if (result.persisted === "firestore") {
+        setForm(blankForm);
+        setErrors({});
+        setStep(0);
+        try { window.localStorage.removeItem(draftKey); } catch { /* storage is optional */ }
+      }
+    } catch (error) {
+      setStatus({ kind: "error", text: error?.message || "We could not send the request. Your draft is still saved here." });
+    } finally {
+      setSubmitting(false);
     }
   }
 
+  function clearDraft() {
+    setForm(blankForm);
+    setErrors({});
+    setStatus({ kind: "info", text: "The saved draft was cleared from this device." });
+    setStep(0);
+    try { window.localStorage.removeItem(draftKey); } catch { /* local storage unavailable */ }
+  }
+
+  const selectStyle = { minHeight: 46, borderRadius: 10, border: `1px solid ${errors.service || errors.timeline ? "#b64231" : P.line}`, padding: "0 12px", fontFamily: P.sans, fontSize: 14, background: P.fieldBg, color: P.fieldText };
+  const calloutStyle = { marginTop: 12, borderRadius: 12, border: `1px solid ${status?.kind === "error" ? "#b64231" : P.line}`, background: status?.kind === "success" ? "#edf6ef" : status?.kind === "warning" ? "#fff4e5" : P.cardSoft, padding: 13, color: P.text, fontFamily: P.sans, fontSize: 13.5, lineHeight: 1.65 };
+
   return (
     <div style={{ display: "grid", gap: 18 }}>
-      <SectionTitle
-        eyebrow={isQuote ? "Get A Quote" : "Contact Wright"}
-        title={isQuote ? "Request traffic control support with the details that matter." : "Reach WD Wright with clear, direct project information."}
-        body={isQuote
-          ? "This quote page is built to collect the details Wright actually needs: market, service type, timing, and project context."
-          : "Use this page to share project needs, service questions, and coverage details so the right WD Wright team can follow up."}
-      />
+      <SectionTitle eyebrow={isQuote ? "Get A Quote" : "Contact Wright"} title={isQuote ? "Tell us about your work zone." : "Send a clear project question."} body="A few project details help route your request. You can save this draft and return on the same device." />
       <div className="wdw-public-split" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(280px, 0.9fr)", gap: 18 }}>
         <Surface>
-          <Stepper
-            palette={{ line: P.line, accent: P.amber, accentSoft: P.cardSoft, panelSoft: P.cardSoft, muted: P.muted, dark: P.text }}
-            activeStep={step}
-            steps={[
-              { key: "contact", label: "Contact", detail: "Who should Wright reach?" },
-              { key: "scope", label: "Scope", detail: "Where and what support?" },
-              { key: "details", label: "Details", detail: "Field conditions and notes" },
-            ]}
-          />
-          <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
-            {step === 0 ? (
-              <>
-                {[
-                  ["name", "Name"],
-                  ["company", "Company"],
-                  ["email", "Email"],
-                  ["phone", "Phone"],
-                ].map(([key, label]) => (
-                  <label key={key} style={{ display: "grid", gap: 6, fontFamily: P.sans, fontSize: 12.5, fontWeight: 700, color: P.text }}>
-                    {label}
-                    <input
-                      value={form[key]}
-                      onChange={(event) => updateField(key, event.target.value)}
-                      style={{ minHeight: 46, borderRadius: 10, border: `1px solid ${errors[key] ? "#c95b4a" : P.line}`, padding: "0 12px", fontFamily: P.sans, fontSize: 14, background: P.fieldBg, color: P.fieldText }}
-                    />
-                    <InlineFieldMessage message={errors[key]} />
-                  </label>
-                ))}
-              </>
-            ) : null}
-            {step === 1 ? (
-              <>
-                {[
-                  ["location", "Project Location"],
-                  ["service", "Service Type"],
-                  ["timeline", "Timeline"],
-                ].map(([key, label]) => (
-                  <label key={key} style={{ display: "grid", gap: 6, fontFamily: P.sans, fontSize: 12.5, fontWeight: 700, color: P.text }}>
-                    {label}
-                    <input
-                      value={form[key]}
-                      onChange={(event) => updateField(key, event.target.value)}
-                      style={{ minHeight: 46, borderRadius: 10, border: `1px solid ${errors[key] ? "#c95b4a" : P.line}`, padding: "0 12px", fontFamily: P.sans, fontSize: 14, background: P.fieldBg, color: P.fieldText }}
-                    />
-                    <InlineFieldMessage message={errors[key]} />
-                  </label>
-                ))}
-              </>
-            ) : null}
-            {step === 2 ? (
-              <label style={{ display: "grid", gap: 6, fontFamily: P.sans, fontSize: 12.5, fontWeight: 700, color: P.text }}>
-                Project Details
-                <textarea
-                  value={form.details}
-                  onChange={(event) => updateField("details", event.target.value)}
-                  rows={7}
-                  style={{ borderRadius: 10, border: `1px solid ${errors.details ? "#c95b4a" : P.line}`, padding: "12px", fontFamily: P.sans, fontSize: 14, background: P.fieldBg, color: P.fieldText, resize: "vertical" }}
-                />
-                <InlineFieldMessage message={errors.details} />
+          <Stepper palette={{ line: P.line, accent: P.amber, accentSoft: P.cardSoft, panelSoft: P.cardSoft, muted: P.muted, dark: P.text }} activeStep={step} steps={steps} />
+          <form onSubmit={handleSubmit} style={{ display: "grid", gap: 14 }}>
+            {step === 0 ? <>
+              {control("name", "Your name", { required: true, placeholder: "Name" })}
+              {control("company", "Organization", { placeholder: "Company or agency (optional)" })}
+              {control("email", "Email", { required: true, type: "email", placeholder: "you@example.com" })}
+              {control("phone", "Phone", { type: "tel", placeholder: "Optional" })}
+              <p style={{ margin: 0, fontFamily: P.sans, fontSize: 12.5, color: P.muted }}>Email is required so the team can follow up. A phone number is optional.</p>
+            </> : null}
+            {step === 1 ? <>
+              {control("location", "Project address, city, or state", { required: true, placeholder: "Where will the work take place?" })}
+              {control("postalCode", "ZIP code", { type: "text", placeholder: "Optional", hint: "ZIP codes help identify a market; they do not confirm crew availability." })}
+              <label htmlFor={`${mode}-service`} style={{ display: "grid", gap: 6, fontFamily: P.sans, fontSize: 13, fontWeight: 750, color: P.text }}>
+                Service needed *
+                <select id={`${mode}-service`} name="service" value={form.service} onChange={(event) => updateField("service", event.target.value)} style={selectStyle} aria-invalid={!!errors.service}>
+                  <option value="">Choose a service</option>
+                  {SERVICES.map((service) => <option key={service.slug} value={service.title}>{service.title}</option>)}
+                </select>
+                {errors.service ? <span role="alert" style={{ color: "#9a3027", fontSize: 12 }}>{errors.service}</span> : null}
               </label>
-            ) : null}
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {step > 0 ? (
-                <button type="button" onClick={() => setStep((current) => Math.max(0, current - 1))} style={{ border: `1px solid ${P.line}`, background: "transparent", color: P.text, borderRadius: 999, minHeight: 44, padding: "0 16px", fontFamily: P.sans, fontWeight: 800, cursor: "pointer" }}>
-                  Back
-                </button>
-              ) : null}
-              {step < 2 ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!validate(step)) return;
-                    setStep((current) => Math.min(2, current + 1));
-                  }}
-                  style={{ border: "none", background: P.pine, color: "#fff", borderRadius: 999, minHeight: 44, padding: "0 16px", fontFamily: P.sans, fontWeight: 800, cursor: "pointer" }}
-                >
-                  Continue
-                </button>
-              ) : null}
+              {form.service ? <div role="status" style={{ borderRadius: 12, padding: 12, border: `1px solid ${P.line}`, background: P.cardSoft, color: P.muted, fontFamily: P.sans, fontSize: 13, lineHeight: 1.6 }}>
+                {SERVICES.find((service) => service.title === form.service)?.body} For area confirmation, call {BRAND.phone}.
+              </div> : null}
+              {control("projectRole", "Your role on the project", { placeholder: "Owner, contractor, utility, municipality…" })}
+            </> : null}
+            {step === 2 ? <>
+              <label htmlFor={`${mode}-timeline`} style={{ display: "grid", gap: 6, fontFamily: P.sans, fontSize: 13, fontWeight: 750, color: P.text }}>
+                When do you need support? *
+                <select id={`${mode}-timeline`} value={form.timeline} onChange={(event) => updateField("timeline", event.target.value)} style={selectStyle}>
+                  <option value="">Choose a timeframe</option>
+                  {["Emergency / within 24 hours", "Within 1 week", "Within 2–4 weeks", "More than a month away", "Dates not set yet"].map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+                {errors.timeline ? <span role="alert" style={{ color: "#9a3027", fontSize: 12 }}>{errors.timeline}</span> : null}
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+                {control("startDate", "Start date", { type: "date" })}
+                {control("endDate", "End date", { type: "date" })}
+              </div>
+              {errors.endDate ? <span role="alert" style={{ color: "#9a3027", fontSize: 12 }}>{errors.endDate}</span> : null}
+              {control("workHours", "Work hours", { placeholder: "e.g. weekdays, 7 a.m.–5 p.m." })}
+              <label htmlFor={`${mode}-closure`} style={{ display: "grid", gap: 6, fontFamily: P.sans, fontSize: 13, fontWeight: 750, color: P.text }}>
+                Lane or closure conditions
+                <select id={`${mode}-closure`} value={form.closure} onChange={(event) => updateField("closure", event.target.value)} style={selectStyle}>
+                  <option value="">Choose if known</option>
+                  {["Shoulder or roadside work", "Single-lane alternating traffic", "Lane closure", "Road closure or detour", "Intersection or event", "Not sure yet"].map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+              </label>
+              {control("permits", "Traffic plan or permit status", { placeholder: "Have a plan, need help, or not sure" })}
+              <label htmlFor={`${mode}-details`} style={{ display: "grid", gap: 6, fontFamily: P.sans, fontSize: 13, fontWeight: 750, color: P.text }}>
+                Project notes *
+                <textarea id={`${mode}-details`} value={form.details} onChange={(event) => updateField("details", event.target.value)} rows={5} maxLength={2000} placeholder="Describe the work, site access, traffic conditions, and anything else the team should know." aria-invalid={!!errors.details} style={{ borderRadius: 10, border: `1px solid ${errors.details ? "#b64231" : P.line}`, padding: 12, font: `14px ${P.sans}`, background: P.fieldBg, color: P.fieldText, resize: "vertical" }} />
+                <span style={{ color: P.muted, fontWeight: 500, fontSize: 12 }}>{form.details.length}/2000 characters. Plans and permits are not uploaded through this form yet.</span>
+                {errors.details ? <span role="alert" style={{ color: "#9a3027", fontSize: 12 }}>{errors.details}</span> : null}
+              </label>
+            </> : null}
+            {step === 3 ? <>
+              <div style={{ display: "grid", gap: 10, borderRadius: 14, background: P.cardSoft, padding: 16 }}>
+                {[ ["Contact", `${form.name} · ${form.email}${form.phone ? ` · ${form.phone}` : ""}`], ["Organization", form.company || "Not provided"], ["Location", `${form.location}${form.postalCode ? ` · ${form.postalCode}` : ""}`], ["Service", form.service], ["Timing", [form.timeline, form.startDate, form.endDate].filter(Boolean).join(" · ")], ["Work conditions", [form.closure, form.workHours].filter(Boolean).join(" · ") || "Not provided"], ["Notes", form.details] ].map(([label, value]) => <div key={label} style={{ display: "grid", gridTemplateColumns: "minmax(90px, .3fr) 1fr", gap: 10 }}><strong style={{ fontFamily: P.sans, fontSize: 12, color: P.pine }}>{label}</strong><span style={{ fontFamily: P.sans, fontSize: 13.5, color: P.text, lineHeight: 1.55, overflowWrap: "anywhere" }}>{value}</span></div>)}
+              </div>
+              <div style={{ fontFamily: P.sans, fontSize: 12.5, lineHeight: 1.6, color: P.muted }}>Check these details before sending. This request is not a confirmed booking or service availability commitment.</div>
+            </> : null}
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {step > 0 ? <button type="button" onClick={() => { setErrors({}); setStep((current) => Math.max(0, current - 1)); }} style={{ border: `1px solid ${P.line}`, background: "transparent", color: P.text, borderRadius: 999, minHeight: 44, padding: "0 16px", fontFamily: P.sans, fontWeight: 800, cursor: "pointer" }}>Back</button> : null}
+                {step < 3 ? <button type="button" onClick={() => { if (validate(step)) setStep((current) => Math.min(3, current + 1)); }} style={{ border: "none", background: P.pine, color: "#fff", borderRadius: 999, minHeight: 44, padding: "0 16px", fontFamily: P.sans, fontWeight: 800, cursor: "pointer" }}>Continue</button> : <button type="submit" disabled={submitting} style={{ border: "none", background: P.amber, color: P.text, borderRadius: 999, minHeight: 48, padding: "0 18px", fontFamily: P.sans, fontWeight: 800, cursor: submitting ? "wait" : "pointer", opacity: submitting ? 0.7 : 1 }}>{submitting ? "Sending…" : firebaseUser?.uid ? (isQuote ? "Send Quote Request" : "Send Contact Request") : "Sign In To Send"}</button>}
+              </div>
+              <button type="button" onClick={clearDraft} style={{ border: 0, background: "transparent", color: P.muted, padding: "8px 4px", fontFamily: P.sans, fontSize: 12.5, textDecoration: "underline", cursor: "pointer" }}>Clear saved draft</button>
             </div>
-            <button type="submit" style={{ border: "none", background: P.amber, color: P.text, borderRadius: 999, minHeight: 48, padding: "0 18px", fontFamily: P.sans, fontWeight: 800, cursor: "pointer" }}>
-              {firebaseUser?.uid ? (isQuote ? "Submit Quote Request" : "Send Contact Request") : "Sign In To Continue"}
-            </button>
           </form>
-          {status ? <div style={{ marginTop: 12, fontFamily: P.sans, fontSize: 13.5, lineHeight: 1.7, color: P.muted }}>{status}</div> : null}
+          {status ? <div role="status" aria-live="polite" style={calloutStyle}>{status.text}{status.kind === "info" && !firebaseUser?.uid ? <button type="button" onClick={() => onRequireAuth?.(isQuote ? "/quote" : "/contact")} style={{ display: "block", marginTop: 8, border: 0, background: "transparent", padding: 0, color: P.pine, textDecoration: "underline", font: "inherit", cursor: "pointer" }}>Sign in and return to this draft</button> : null}</div> : null}
         </Surface>
         <Surface tone="soft">
-          <div style={{ fontFamily: P.display, fontSize: 28, lineHeight: 1, textTransform: "uppercase", marginBottom: 12 }}>Intake notes</div>
+          <div style={{ fontFamily: P.display, fontSize: 28, lineHeight: 1, textTransform: "uppercase", marginBottom: 12 }}>Before you send</div>
           <div style={{ display: "grid", gap: 10 }}>
-            {[
-              "Authenticated account access is now required before Wright service-booking or related intake can be submitted.",
-              "Your saved account details can help speed up future requests and follow-up.",
-              "Use the project details field to include location, lane conditions, scheduling needs, and any permit-related notes.",
-              "Approved WD Wright team members can review incoming requests and respond from the right office or support lane.",
-            ].map((item) => (
-              <div key={item} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <span style={{ color: P.amber, fontWeight: 800 }}>•</span>
-                <span style={{ fontFamily: P.sans, fontSize: 13.5, lineHeight: 1.7, color: P.muted }}>{item}</span>
-              </div>
-            ))}
+            {["Choose the closest service; the Wright team can confirm the exact setup.", "Add the work address or nearest city and the schedule if known.", "The form saves a draft on this device. Clear it before sharing the device.", "This form cannot attach plan files yet. Call or email the team to share plans and permits."].map((item) => <div key={item} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><span aria-hidden="true" style={{ color: P.amber, fontWeight: 800 }}>•</span><span style={{ fontFamily: P.sans, fontSize: 13.5, lineHeight: 1.7, color: P.muted }}>{item}</span></div>)}
           </div>
-          <div style={{ marginTop: 18, fontFamily: P.sans, fontSize: 13.5, lineHeight: 1.8, color: P.text, fontWeight: 700 }}>
-            {BRAND.phone}<br />
-            {isQuote ? BRAND.quoteEmail : BRAND.email}
-          </div>
-          <div style={{ marginTop: 18 }}>
-            <EmptyPanel
-              palette={{ line: P.line, panelSoft: "#fff", panel: P.cardSoft, muted: P.muted, dark: P.text }}
-              title="Saved progress"
-              body="Your draft stays on this device while you move through the intake steps, so you do not have to restart the request."
-            />
-          </div>
+          <div style={{ marginTop: 18, fontFamily: P.sans, fontSize: 13.5, lineHeight: 1.8, color: P.text, fontWeight: 700 }}>{BRAND.phone}<br />{isQuote ? BRAND.quoteEmail : BRAND.email}</div>
+          <div style={{ marginTop: 18 }}><EmptyPanel palette={{ line: P.line, panelSoft: "#fff", panel: P.cardSoft, muted: P.muted, dark: P.text }} title="Saved on this device" body="This draft stays in this browser only; it is not sent to WD Wright until you sign in and submit it." /></div>
         </Surface>
       </div>
     </div>
@@ -1246,11 +1227,17 @@ function RoadmapView() {
 
 function FAQView() {
   const [openQuestion, setOpenQuestion] = useState(FAQS[0]?.q || "");
+  const [query, setQuery] = useState("");
+  const filteredFaqs = FAQS.filter((item) => `${item.q} ${item.a}`.toLowerCase().includes(query.trim().toLowerCase()));
   return (
     <Surface>
       <div style={{ fontFamily: P.display, fontSize: 30, lineHeight: 1, textTransform: "uppercase", marginBottom: 12 }}>WD Wright FAQ</div>
+      <label htmlFor="wright-faq-search" style={{ display: "grid", gap: 6, marginBottom: 14, fontFamily: P.sans, fontSize: 13, fontWeight: 750, color: P.text }}>
+        Search questions
+        <input id="wright-faq-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Try ‘quote’, ‘coverage’, or a service name" style={{ minHeight: 46, borderRadius: 10, border: `1px solid ${P.line}`, padding: "0 12px", fontFamily: P.sans, fontSize: 14, background: P.fieldBg, color: P.fieldText }} />
+      </label>
       <div style={{ display: "grid", gap: 10 }}>
-        {FAQS.map((item) => (
+        {filteredFaqs.map((item) => (
           <button
             key={item.q}
             type="button"
@@ -1264,6 +1251,7 @@ function FAQView() {
             {openQuestion === item.q ? <div style={{ fontFamily: P.sans, fontSize: 13.5, lineHeight: 1.7, color: P.muted }}>{item.a}</div> : null}
           </button>
         ))}
+        {!filteredFaqs.length ? <div role="status" style={{ borderRadius: 12, padding: 14, background: P.cardSoft, fontFamily: P.sans, color: P.muted }}>No matching FAQ. Try a different phrase or contact the team.</div> : null}
       </div>
     </Surface>
   );
@@ -1429,7 +1417,7 @@ export default function WDWrightPublicPage({ initialView = "home" }) {
 
   function handleNavigate(target) {
     const href = target === "/" ? "/" : target.startsWith("/") ? target : `/${target}`;
-    if (href === "/quote" || href === "/contact" || href === "/resources" || href === "/help") {
+    if (href === "/resources" || href === "/help") {
       navigateToAuthenticatedFlow(href);
       return;
     }
@@ -1441,7 +1429,7 @@ export default function WDWrightPublicPage({ initialView = "home" }) {
 
   return (
     <Shell onNavigate={handleNavigate} themeMode={themeMode} onThemeChange={setThemeMode} firebaseUser={firebaseUser} currentView={view}>
-      {view === "home" ? <HomeView themeMode={themeMode} onNavigate={(target) => (target === "/quote" ? navigateToAuthenticatedFlow(target) : handleNavigate(target))} /> : null}
+      {view === "home" ? <HomeView themeMode={themeMode} onNavigate={handleNavigate} /> : null}
       {view === "about" ? <AboutView /> : null}
       {view === "services" ? <ServicesView /> : null}
       {view === "technology" ? <TechnologyView /> : null}
