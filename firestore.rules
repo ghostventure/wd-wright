@@ -1224,8 +1224,8 @@ service cloud.firestore {
         && request.resource.data.project.role.size() <= 120
         && request.resource.data.project.location is string
         && request.resource.data.project.location.size() <= 160
-        && request.resource.data.project.service is string
-        && request.resource.data.project.service.size() <= 120
+        && request.resource.data.project['service'] is string
+        && request.resource.data.project['service'].size() <= 120
         && request.resource.data.project.timeline is string
         && request.resource.data.project.timeline.size() <= 120
         && request.resource.data.project.details is string

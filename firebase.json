@@ -121,5 +121,14 @@
   },
   "storage": {
     "rules": "storage.rules"
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "WD Wright",
+        "supportEmail": "wdwrightinc@wdwright.com"
+      }
+    }
   }
 }

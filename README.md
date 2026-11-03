@@ -13,7 +13,7 @@ Firebase client configuration is in `src/firebase.js`. Firebase client API keys 
 
 ## Backend status
 
-The repository includes Cloud Functions, Firestore rules, and Storage rules. Cloud Functions are intentionally left off while Blaze is deferred. The latest Firestore API check returned 403, default database creation in `nam5` did not complete, and Firebase Authentication setup reported `CONFIGURATION_NOT_FOUND`. A code push does not activate these services. See the backend activation checklist before enabling live account, dispatch, file, recruiting, or billing workflows.
+The `wd-wright-traffic` project now has a Standard Firestore Native database in `nam5` with deletion protection, deployed Firestore rules, and Email/Password plus Google sign-in providers. These services are provisioned, but authenticated profile, quote, and Google sign-in flows still need runtime verification. Cloud Functions remain undeployed while Blaze billing is deferred, and Cloud Storage has not been deployed in this pass. See the [backend activation status](docs/WDWRIGHT_BACKEND_ACTIVATION_2026-11-03.md) before treating dispatch, file, recruiting, or payment workflows as live.
 
 ## Documentation
 
